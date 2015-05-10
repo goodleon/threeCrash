@@ -10,7 +10,7 @@ local cclog = function(...)
     print(string.format(...))
 end
 
-CrashItem = class("CrashItem",function()
+local CrashItem = class("CrashItem",function()
     return cc.Scene:create()
 end)
 
@@ -38,10 +38,11 @@ function CrashItem:createObj(raw,col)
     spriteObj.iRow = raw
     spriteObj.iCol = col
     spriteObj.bDelMarked = 0
---    spriteObj.getIsNeedRemove = self.getIsNeedRemove
---    spriteObj.getRow = self.getRow
---    spriteObj.getCol = self.getCol
---    spriteObj.getImgIndex = self.getImgIndex
+
+    spriteObj.getIsNeedRemove = self.getIsNeedRemove
+    spriteObj.getRow = self.getRow
+    spriteObj.getCol = self.getCol
+    spriteObj.getImgIndex = self.getImgIndex
 
 
     return spriteObj
@@ -75,4 +76,4 @@ function CrashItem:ctor()
     math.randomseed(os.time())
 end
 
---return CrashItem
+return CrashItem

@@ -5,7 +5,7 @@
 -- Time: 16:27
 -- To change this template use File | Settings | File Templates.
 
-require "CrashItem"
+local CrashItem = require "CrashItem"
 
 local ROWS , COLS = 7,7
 local SPRITE_WIDTH,SPRITE_HEIGHT = 64,64
@@ -642,7 +642,7 @@ function CrashMain:fillSprite()
 
                     local starPosition = cc.p(sprite:getPosition())
                     local endPositionX,endPositionY = self:positionOfItem(newRow,c)
-                    local speed = (starPosition.y - endPositionY) / self.visibleSize.height * 2
+                    local speed = (starPosition.y - endPositionY) / self.visibleSize.height * 10
                     sprite:stopAllActions()
                     sprite:runAction(cc.MoveTo:create(speed,cc.p(endPositionX,endPositionY)))
                     sprite.iRow = newRow
