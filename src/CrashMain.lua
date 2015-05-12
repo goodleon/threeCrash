@@ -634,7 +634,7 @@ function CrashMain:runDelete(sprite)
         self.isActionRun = false
         self.isFillSprite = true
     end
-    sprite:runAction(cc.Sequence:create(cc.ScaleTo:create(0.3,0.8,0.8),cc.ScaleTo:create(0.3,1.3,1.3),cc.CallFunc:create(callBack)))
+    sprite:runAction(cc.Sequence:create(cc.RotateTo:create(0.2, 180),cc.ScaleTo:create(0.1,1.2,1.2),cc.ScaleTo:create(0.2,0.5,0.5),cc.ScaleTo:create(0.1,1.2,1.2),cc.CallFunc:create(callBack)))
 end
 
 function CrashMain:deleteMarkedSprite()

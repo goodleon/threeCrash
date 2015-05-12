@@ -42,12 +42,11 @@ function Countdown:ctor()
     print("======Countdown.ctor()=========")
 end
 
---设置倒计时到00:00:00时调用这个函数，传入的参数是一个函数
-function Countdown.function_(f)
+function Countdown:function_(f)
     Countdown.func = f
 end
 
-function Countdown.settime(hour,minute,second)
+function Countdown:settime(hour,minute,second)
     Countdown.hour = hour   --小时
     Countdown.minute = minute --分钟
     Countdown.second = second --秒钟
