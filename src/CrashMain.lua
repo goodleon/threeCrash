@@ -86,6 +86,7 @@ function CrashMain:reSetMap()
 end
 
 function CrashMain:initMap()
+
     self.isActionRun = false
     self.isFillSprite = false
     for r=1,ROWS do
@@ -184,12 +185,12 @@ function CrashMain:createLayerBack()
     local speedStep = 1
     local Timer = require("CountTimer")  --将倒计时类赋给一个值
     local function callBackFunc()
-        cclog("-------------count down!!")
+        --cclog("-------------count down!!")
         if self.iTimeCounts and self.iTimeCounts == 0 then
             Timer:remove_scheduler()
             local resultSence = require("Result")
             local sence = resultSence.create()
-            cclog("bbbbbbbbbbbbbbbb self.iScore = " .. self.iScore)
+            --cclog("bbbbbbbbbbbbbbbb self.iScore = " .. self.iScore)
             sence:initData(self.iScore)
             if cc.Director:getInstance():getRunningScene() then
                 cc.Director:getInstance():replaceScene(sence)
@@ -624,20 +625,28 @@ function CrashMain:checkAndCrash()
 
 end
 
+function CrashMain:runDelete(sprite)
+
+    self.isActionRun = true
+    self.isFillSprite = false
+    local function callBack()
+        sprite:removeFromParent()
+        self.isActionRun = false
+        self.isFillSprite = true
+    end
+    sprite:runAction(cc.Sequence:create(cc.ScaleTo:create(0.3,0.8,0.8),cc.ScaleTo:create(0.3,1.3,1.3),cc.CallFunc:create(callBack)))
+end
 
 function CrashMain:deleteMarkedSprite()
-    cclog("---------------------deleteMarkedSprite called!!")
-    --self.isActionRun = true
     for r=1,ROWS do
         for c=1,COLS do
             if self.vecSprite[r][c] and self.vecSprite[r][c].bDelMarked == 1 then
-                if self.vecSprite[r][c].bDelMarked == 1 then
-                    --cclog("-------------row = " .. r .. " col=" .. c .. " bDelMarked = " .. self.vecSprite[r][c].bDelMarked)
-                end
-                self.vecSprite[r][c]:removeFromParent()
+
                 if not (self.initfirst == 1) then
+                    self:runDelete(self.vecSprite[r][c])
                     self.iScore = self.iScore + 10
                 else
+                    self.vecSprite[r][c]:removeFromParent()
                     self.iScore = 0
                 end
 
@@ -749,18 +758,14 @@ function CrashMain:fillSprite()
 
                     local starPosition = cc.p(sprite:getPosition())
                     local endPositionX,endPositionY = self:positionOfItem(newRow,c)
-                    --local speed = (starPosition.y - endPositionY) / self.visibleSize.height * 1
+
                     local speed = 0.1
                     sprite:stopAllActions()
                     self.isActionRun = true
                     self.isFillSprite = true
-                    --sprite:runAction(cc.MoveTo:create(speed,cc.p(endPositionX,endPositionY)))
                     if self.initfirst == 1 then
                         sprite:setPosition(cc.p(endPositionX,endPositionY))
-                        self.iScore = 0
-                        sprite:runAction(cc.Sequence:create(cc.DelayTime:create(0.5),cc.CallFunc:create(firstFillEnd)))
---                        self.isActionRun = false
---                        self.isFillSprite = false
+                        sprite:runAction(cc.Sequence:create(cc.DelayTime:create(0.2),cc.CallFunc:create(firstFillEnd)))
                     else
                         sprite:runAction(cc.Sequence:create(cc.MoveTo:create(speed,cc.p(endPositionX,endPositionY)),cc.CallFunc:create(fillEnd)))
                     end
@@ -768,7 +773,6 @@ function CrashMain:fillSprite()
                     sprite.iRow = newRow
                 else
                     --fillEnd()
-
                 end
 
             end
