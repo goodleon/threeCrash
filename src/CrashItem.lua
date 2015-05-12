@@ -29,16 +29,13 @@ function CrashItem:initData()
 end
 
 function CrashItem:createObj(raw,col)
-    --math.randomseed(tostring(os.time()):reverse():sub(1, 6))
+
     local index = math.random(1,6)
-    --local index = cc.rand % 6
-    --cclog("-------index = " .. index)
     local spriteObj = cc.Sprite:create(self.tItemList[index])
     spriteObj.imgIndex = index
     spriteObj.iRow = raw
     spriteObj.iCol = col
     spriteObj.bDelMarked = 0
-
     spriteObj.getIsNeedRemove = self.getIsNeedRemove
     spriteObj.getRow = self.getRow
     spriteObj.getCol = self.getCol
@@ -73,7 +70,6 @@ function CrashItem:ctor()
     self.visibleSize = cc.Director:getInstance():getVisibleSize()
     self.origin = cc.Director:getInstance():getVisibleOrigin()
     self.schedulerID = nil
-    math.randomseed(os.time())
 end
 
 return CrashItem

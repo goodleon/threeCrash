@@ -45,6 +45,7 @@ function CrashMain:ctor()
     self.isFillSprite = false
     self.isCanTouch = true
     self.iScore = 0
+    self.initfirst = 1
     --背景图的初始摆放位置
     self.positionX,self.positionY = self.visibleSize.width / 2,self.visibleSize.height / 2
     --初始化资源
@@ -60,36 +61,83 @@ function CrashMain:ctor()
 
 end
 
+function CrashMain:reSetMap()
+    self.initfirst = 1
 
-
-function CrashMain:initMap()
-    for r=1,ROWS do
-        for c=1,COLS do
-            self:createItem(r,c)
+    for i=1,7 do
+        for j=1,7 do
+            self.vecSprite[i][j]:removeFromParent()
+            self.vecSprite[i][j] = nil
         end
     end
+
+    self.isActionRun = false
+    self.isFillSprite = false
+    for r=1,ROWS do
+        for c=1,COLS do
+            --self:createItem(r,c)
+            self:initCreateItem(r,c)
+        end
+    end
+
+    --self:initCheckCrash()
+    self:checkAndCrash()
+    --self.iScore = 0
+end
+
+function CrashMain:initMap()
+    self.isActionRun = false
+    self.isFillSprite = false
+    for r=1,ROWS do
+        for c=1,COLS do
+            --self:createItem(r,c)
+            self:initCreateItem(r,c)
+        end
+    end
+
+    --self:initCheckCrash()
+    self:checkAndCrash()
+    --self.iScore = 0
+
+end
+
+
+function CrashMain:initCreateItem(raw,col)
+    --newSprite
+    local sprite = CrashItem:createObj(raw,col)
+    --setPosition
+    local endX,endY = self:positionOfItem(raw,col)
+    sprite:setPosition(cc.p(endX,endY))
+
+    --sprite:runAction(cc.Sequence:create(cc.MoveTo:create(speed, cc.p(endX, endY)),cc.CallFunc:create(createAnimEnd)))
+
+    self.layerBack:addChild(sprite)
+
+    self.vecSprite[raw][col] = sprite
+
 end
 
 function CrashMain:createItem(raw,col)
     --newSprite
     local sprite = CrashItem:createObj(raw,col)
     --setPosition
-
+    self.isActionRun = true
+    self.isCanTouch = false
     local endX,endY = self:positionOfItem(raw,col)
     local startX = endX
     local startY = endY + self.visibleSize.height/2
 
+    local function createAnimEnd()
+        cclog("-------------createAnimEnd!!")
+        self.isActionRun = false
+        self.isCanTouch = true
+    end
     sprite:setPosition(cc.p(startX,startY))
-    local speed = startY / (1.2 * self.visibleSize.height)
-    sprite:runAction(cc.MoveTo:create(speed, cc.p(endX, endY)))
+    --local speed = startY / (1 * self.visibleSize.height)
+    local speed = 0.2
+    --sprite:runAction(cc.MoveTo:create(speed, cc.p(endX, endY)))
 
---    local label1 = cc.Label:createWithBMFont("test/bitmapFontTest3.fnt", sprite.imgIndex)
---    label1:setAnchorPoint( cc.p(0,0) )
---    sprite:addChild(label1,0,1)
-
---    local label1 = cc.LabelBMFont:create(sprite.imgIndex, "test/boundsTestFont.fnt")
---    label1:setPosition(cc.p(32, 32))
---    sprite:addChild(label1)
+    sprite:runAction(cc.Sequence:create(cc.MoveTo:create(speed, cc.p(endX, endY)),cc.CallFunc:create(createAnimEnd)))
 
     self.layerBack:addChild(sprite)
 
@@ -104,11 +152,6 @@ function CrashMain:positionOfItem(raw,col)
     return x,y
 end
 
---function CrashMain:positionOfItem(raw,col)
---    local x = self.origin.x + col * SPRITE_WIDTH - (SPRITE_WIDTH/4)
---    local y = self.origin.y + raw * SPRITE_HEIGHT - (SPRITE_HEIGHT/4)
---    return x,y
---end
 
 --添加背景
 function CrashMain:createLayerBack()
@@ -118,20 +161,75 @@ function CrashMain:createLayerBack()
     local bg2 = cc.Sprite:create("test/bg_1.png")
     bg2:setPosition(self.positionX,self.positionY)
 
-    local label1 = cc.LabelBMFont:create("Score", "test/boundsTestFont.fnt")
+    local label1 = cc.LabelBMFont:create("SCORE", "test/boundsTestFont.fnt")
     local label2 = cc.LabelBMFont:create("0", "test/boundsTestFont.fnt")
+
+    local timeDec = cc.LabelBMFont:create("TIME", "test/boundsTestFont.fnt")
+    local timeCount = cc.LabelBMFont:create("", "test/boundsTestFont.fnt")
     self.lableScore = label2
+    self.lableTime = timeCount
     label1:setPosition(130,self.visibleSize.height-30)
     label2:setPosition(130,self.visibleSize.height-60)
+
+    timeDec:setPosition(self.visibleSize.width,self.visibleSize.height-60)
+    timeCount:setPosition(self.visibleSize.width,self.visibleSize.height-90)
+
     bg2:addChild(label1)
     bg2:addChild(label2)
+    bg2:addChild(timeDec)
+    bg2:addChild(timeCount)
     --label1:setString(string)
+    ----------------------------------------
+    self.iTimeCounts = 30
+    local speedStep = 1
+    local Timer = require("CountTimer")  --将倒计时类赋给一个值
+    local function callBackFunc()
+        cclog("-------------count down!!")
+        if self.iTimeCounts and self.iTimeCounts == 0 then
+            Timer:remove_scheduler()
+            local resultSence = require("Result")
+            local sence = resultSence.create()
+            cclog("bbbbbbbbbbbbbbbb self.iScore = " .. self.iScore)
+            sence:initData(self.iScore)
+            if cc.Director:getInstance():getRunningScene() then
+                cc.Director:getInstance():replaceScene(sence)
+            else
+                cc.Director:getInstance():runWithScene(sence)
+            end
+            return
+        end
+        self.iTimeCounts = self.iTimeCounts - 1
+        self.lableTime:setString(self.iTimeCounts)
+    end
+
+
+    Timer:initTimer(callBackFunc,speedStep,self.iTimeCounts)
+    -----------------------------------------
+
+
+
+    -------------------------------------------------
+    local layerMenu = cc.Layer:create()
+    local function menuCallbackClosePopup()
+        --self:reSetMap()
+        os.exit()
+    end
+    local menuPopupItem = cc.MenuItemImage:create("exit_s.png", "exit_s.png")
+    menuPopupItem:setPosition(0,0)
+    menuPopupItem:registerScriptTapHandler(menuCallbackClosePopup)
+    local menuPopup = cc.Menu:create(menuPopupItem)
+    menuPopup:setPosition(self.visibleSize.width,40)
+    bg2:addChild(menuPopup)
+    -------------------------------------------------
     layerBack:addChild(bg2)
 
     local bg = cc.Sprite:create("test/bg_2.png")
     bg:setPosition(self.positionX,self.positionY)
     layerBack:addChild(bg)
 
+
+    math.randomseed(os.time())
+    local index = math.random(1,6)
 
     --启动后初始化棋盘
     self:initMap()
@@ -147,32 +245,30 @@ function CrashMain:createLayerBack()
     local function onTouchBegan(touch, event)
         startSpr = nil
         endSpr   =  nil
-        --self.isActionRun = true
+        --self.isActionRun = false
         if self.isCanTouch then
             local location = touch:getLocation()
             startSpr = self:spriteOfPoint(location)
+            self:checkAndCrash()
         end
 
         return self.isCanTouch
     end
 
     local function onTouchMoved(touch, event)
-        local location = touch:getLocation()
 
-        if (not startSpr) or (not self.isCanTouch)then
+
+        if (not startSpr) or (not self.isCanTouch) or (self.isActionRun)then
             return
         end
+        local location = touch:getLocation()
         --cclog("onTouchMoved: %0.2f, %0.2f", location.x, location.y)
-        self.isActionRun = true
         self:movedDetected(touch)
     end
 
     local function onTouchEnded(touch, event)
         local location = touch:getLocation()
---        cclog("onTouchEnded: %0.2f, %0.2f", location.x, location.y)
---        touchBeginPoint = nil
-        self.isCanTouch = true
-        --self.isActionRun = false
+
     end
 
     local listener = cc.EventListenerTouchOneByOne:create()
@@ -325,6 +421,11 @@ function CrashMain:swapSprite()
 
     self:checkColsSwap(endSpr,2)
 
+    local function swapEnd()
+        cclog("------------------swap anim play ended!!!")
+        self.isActionRun = false
+        self.isCanTouch = true
+    end
 --    cclog("------self.colListOfFirst = " .. table.getn(self.colListOfFirst))
 --    cclog("------self.rowListOfFirst = " .. table.getn(self.rowListOfFirst))
 --    cclog("------self.colListOfSecond = " .. table.getn(self.colListOfSecond))
@@ -334,12 +435,12 @@ function CrashMain:swapSprite()
        table.getn(self.colListOfSecond) >= 3 or
        table.getn(self.rowListOfSecond) >= 3 then
         self.isActionRun = true
-        startSpr:runAction(cc.MoveTo:create(0.2,destPosition))
-        endSpr:runAction(cc.MoveTo:create(0.2,srcPosition))
-        cclog("------------------Have played swap anim !!!")
+--        startSpr:runAction(cc.MoveTo:create(0.2,destPosition))
+--        endSpr:runAction(cc.MoveTo:create(0.2,srcPosition))
 
---        startSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,destPosition)))
---        endSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,srcPosition),cc.CallFunc:create(swapobj)))
+
+        startSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,destPosition)))
+        endSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,srcPosition),cc.CallFunc:create(swapEnd)))
 
         return
         --sprite:runAction(cc.MoveTo:create(speed, cc.p(endX, endY)))
@@ -354,7 +455,7 @@ function CrashMain:swapSprite()
     endSpr.iRow = temRow
     endSpr.iCol = temCol
     startSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,destPosition),cc.MoveTo:create(time,srcPosition)))
-    endSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,srcPosition),cc.MoveTo:create(time,destPosition)))
+    endSpr:runAction(cc.Sequence:create(cc.MoveTo:create(time,srcPosition),cc.MoveTo:create(time,destPosition),cc.CallFunc:create(swapEnd)))
 
 end
 function CrashMain:checkRowsSwap(sprite,type)
@@ -443,37 +544,40 @@ function CrashMain:checkColsSwap(sprite,type)
     end
 end
 
+
+
 function CrashMain:updateScene()
-    --每一帧检查是否有动画正在移动
-    if self.isActionRun then
+    self:checkIfCanTouch()
+
+    if not self.isActionRun then
+        self:checkAndCrash()
+    end
+
+    if not self.isFillSprite and not self.isActionRun then
+        self:checkAndCrash()
+    end
+
+    if self.isFillSprite then
+        self:fillSprite()
+        self.isFillSprite = false
+        self:checkAndCrash()
+    end
+end
+
+
+function CrashMain:checkIfCanTouch()
+    if self.isActionRun or self.isCanTouch then
         for r=1,ROWS do
             for c=1,COLS do
                 local spr = self.vecSprite[ROWS][COLS]
                 if spr and spr:getNumberOfRunningActions() > 0 then
                     self.isActionRun = true
-                    --self.isCanTouch = false
+                    self.isCanTouch = false
                     break
                 end
             end
         end
-        self.isActionRun = false
-        --self.isCanTouch = true
     end
-
-    if not self.isActionRun then
-        if self.isFillSprite then
-            self:fillSprite()
-            self.isFillSprite = false
-        else
-            --self:checkAndCrash()
-        end
-
-        if not self.isFillSprite then
-            self:checkAndCrash()
-        end
-
-    end
-
 end
 
 
@@ -503,9 +607,7 @@ function CrashMain:checkAndCrash()
                 if table.getn(resultSprList) >= 3 then
                     for i,v in pairs(resultSprList) do
                         --mark delete标记确定下来的精灵
-                        --cclog("--------------self:markTobeDeleted(v) called !!!")
-                        --cclog("-----v.iRow = " .. v.iRow .. " v.iCol = " .. v.iCol .. "v.bDelMarked = " .. v.bDelMarked)
-                        self:markTobeDeleted(v)
+                        self.vecSprite[v.iRow][v.iCol].bDelMarked = 1
                     end
 
                     --标记有东西要删除
@@ -522,24 +624,10 @@ function CrashMain:checkAndCrash()
 
 end
 
-function CrashMain:markTobeDeleted(sprite)
-    cclog("-------------------markTobeDeleted called!!")
-    --标记有东西要删除
-    self.isFillSprite = true
-    for r=1,ROWS do
-        for c=1,COLS do
-            if r == sprite.iRow and c == sprite.iCol then
-                self.vecSprite[r][c].bDelMarked = 1
-                break
-            end
-        end
-    end
-
-end
 
 function CrashMain:deleteMarkedSprite()
     cclog("---------------------deleteMarkedSprite called!!")
-    self.isActionRun = true
+    --self.isActionRun = true
     for r=1,ROWS do
         for c=1,COLS do
             if self.vecSprite[r][c] and self.vecSprite[r][c].bDelMarked == 1 then
@@ -547,13 +635,18 @@ function CrashMain:deleteMarkedSprite()
                     --cclog("-------------row = " .. r .. " col=" .. c .. " bDelMarked = " .. self.vecSprite[r][c].bDelMarked)
                 end
                 self.vecSprite[r][c]:removeFromParent()
-                self.iScore = self.iScore + 10
+                if not (self.initfirst == 1) then
+                    self.iScore = self.iScore + 10
+                else
+                    self.iScore = 0
+                end
+
                 self.lableScore:setString(self.iScore)
                 self.vecSprite[r][c] = nil
             end
         end
     end
-
+    --self.isFillSprite = true
 end
 
 function CrashMain:checkRows(sprite)
@@ -627,7 +720,21 @@ function CrashMain:fillSprite()
         colEmpty[i] = 0
     end
 
-    self.isActionRun = true
+    local function fillEnd()
+        cclog("-------------------fillEnd!!")
+        self.isActionRun = false
+        self.isFillSprite = false
+        self.initfirst = 0
+    end
+    local function firstFillEnd()
+        cclog("-------------------fillEnd!!")
+        self.isActionRun = false
+        self.isFillSprite = false
+        self.initfirst = 0
+        self.iScore = 0
+        self.lableScore:setString(self.iScore)
+    end
+
     for c=1,COLS do
         local removedSprOfCol = 0
         for r=1,ROWS do
@@ -642,10 +749,25 @@ function CrashMain:fillSprite()
 
                     local starPosition = cc.p(sprite:getPosition())
                     local endPositionX,endPositionY = self:positionOfItem(newRow,c)
-                    local speed = (starPosition.y - endPositionY) / self.visibleSize.height * 10
+                    --local speed = (starPosition.y - endPositionY) / self.visibleSize.height * 1
+                    local speed = 0.1
                     sprite:stopAllActions()
-                    sprite:runAction(cc.MoveTo:create(speed,cc.p(endPositionX,endPositionY)))
+                    self.isActionRun = true
+                    self.isFillSprite = true
+                    --sprite:runAction(cc.MoveTo:create(speed,cc.p(endPositionX,endPositionY)))
+                    if self.initfirst == 1 then
+                        sprite:setPosition(cc.p(endPositionX,endPositionY))
+                        self.iScore = 0
+                        sprite:runAction(cc.Sequence:create(cc.DelayTime:create(0.5),cc.CallFunc:create(firstFillEnd)))
+--                        self.isActionRun = false
+--                        self.isFillSprite = false
+                    else
+                        sprite:runAction(cc.Sequence:create(cc.MoveTo:create(speed,cc.p(endPositionX,endPositionY)),cc.CallFunc:create(fillEnd)))
+                    end
+
                     sprite.iRow = newRow
+                else
+                    --fillEnd()
 
                 end
 
@@ -659,10 +781,16 @@ function CrashMain:fillSprite()
 
     for c=1,COLS do
         for r=ROWS - colEmpty[c] + 1 ,ROWS do
-            self:createItem(r,c)
+
+            if self.initfirst == 1 then
+                --对第一次初始化作特殊处理
+                self:initCreateItem(r,c)
+            else
+                self:createItem(r,c)
+            end
+
         end
     end
-
 
 end
 
